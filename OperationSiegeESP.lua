@@ -1,4 +1,7 @@
 -- created by johnny_boy2023 if u find this script good 4 u.
+--heres the raw and shortened version
+--COPY AND PASTE THIS IN GAME:
+--loadstring(game:HttpGet("https://raw.githubusercontent.com/johnnyboy2023scripts/Operation-Siege-ESP/main/OperationSiegeESP.lua"))()
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
