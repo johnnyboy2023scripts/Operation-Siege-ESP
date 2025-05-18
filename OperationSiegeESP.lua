@@ -1,4 +1,4 @@
--- created by johnny_boy2023 if u find this script good 4 u. this script is in BETA and will have bugs. if u cant see enemy players just disable and enable the ESP again.
+-- created by johnny_boy2023 if u find this script good 4 u. this script is in BETA and will have bugs. if u cant see enemy players just disable and enable the ESP again. 
 --heres the raw and shortened version
 --COPY AND PASTE THIS IN GAME:
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/johnnyboy2023scripts/Operation-Siege-ESP/main/OperationSiegeESP.lua"))()
