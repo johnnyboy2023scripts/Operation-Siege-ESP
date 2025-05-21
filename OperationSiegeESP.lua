@@ -1,11 +1,14 @@
 -- created by johnny_boy2023 if u find this script good 4 u. this script is in BETA and will have bugs. if u cant see enemy players just disable and enable the ESP again. 
+--UPDATE 20/05/2025 - Added Silent Aim. 
 --heres the raw and shortened version
 --COPY AND PASTE THIS IN GAME:
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/johnnyboy2023scripts/Operation-Siege-ESP/main/OperationSiegeESP.lua"))()
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
 
 -- GUI
 local screenGui = Instance.new("ScreenGui")
@@ -14,7 +17,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = game:GetService("CoreGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 80)
+frame.Size = UDim2.new(0, 200, 0, 100)
 frame.Position = UDim2.new(0, 50, 0, 50)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
@@ -48,11 +51,31 @@ label.BackgroundTransparency = 1
 label.Font = Enum.Font.SourceSans
 label.TextSize = 16
 
+local silentAimBtn = Instance.new("TextButton", frame)
+silentAimBtn.Size = UDim2.new(0, 140, 0, 20)
+silentAimBtn.Position = UDim2.new(0, 10, 0, 70)
+silentAimBtn.Text = "Silent Aim: Off"
+silentAimBtn.TextColor3 = Color3.new(1, 1, 1)
+silentAimBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+silentAimBtn.Font = Enum.Font.SourceSans
+silentAimBtn.TextSize = 16
+
 -- Colors
 local playerColor = Color3.fromRGB(255, 0, 0)
 local gadgetColor = Color3.fromRGB(255, 255, 0)
 local camColor = Color3.fromRGB(0, 0, 255)
 local espEnabled = false
+local silentAimEnabled = false
+
+-- FOV
+local fovRadius = 100
+local fovCircle = Drawing.new("Circle")
+fovCircle.Radius = fovRadius
+fovCircle.Color = Color3.fromRGB(0, 255, 0)
+fovCircle.Thickness = 2
+fovCircle.Transparency = 0.5
+fovCircle.Filled = false
+fovCircle.Visible = false
 
 -- Utility
 local function highlightObject(obj, name, color)
@@ -72,7 +95,7 @@ local function unhighlightObject(obj, name)
     if h then h:Destroy() end
 end
 
--- Check/Update Players
+-- ESP Functions
 local function updatePlayerESP()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Team ~= LocalPlayer.Team then
@@ -81,7 +104,6 @@ local function updatePlayerESP()
     end
 end
 
--- Check Gadgets
 local keywords = { "gadget", "drone", "camera", "device" }
 local function checkAndHighlightGadget(obj)
     for _, word in ipairs(keywords) do
@@ -95,7 +117,6 @@ local function checkAndHighlightGadget(obj)
     end
 end
 
--- Check DefaultCam
 local function highlightDefaultCams()
     local seWorkspace = Workspace:FindFirstChild("SE_Workspace")
     if not seWorkspace then return end
@@ -108,7 +129,87 @@ local function highlightDefaultCams()
     end
 end
 
--- Realtime Monitor
+-- Toggle ESP
+checkbox.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    checkbox.Text = espEnabled and "☑" or "☐"
+    if espEnabled then
+        updatePlayerESP()
+        highlightDefaultCams()
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            checkAndHighlightGadget(obj)
+        end
+    else
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character then unhighlightObject(p.Character, "ESP_Highlight") end
+        end
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            unhighlightObject(obj, "ObjectESP")
+            unhighlightObject(obj, "CamHighlight")
+        end
+    end
+end)
+
+-- Silent Aim Toggle
+silentAimBtn.MouseButton1Click:Connect(function()
+    silentAimEnabled = not silentAimEnabled
+    fovCircle.Visible = silentAimEnabled
+    silentAimBtn.Text = "Silent Aim: " .. (silentAimEnabled and "On" or "Off")
+end)
+
+-- Auto ESP refresh
+task.spawn(function()
+    while true do
+        if espEnabled then updatePlayerESP() end
+        task.wait(3)
+    end
+end)
+
+-- FOV circle position
+RunService.RenderStepped:Connect(function()
+    local mousePos = UserInputService:GetMouseLocation()
+    fovCircle.Position = Vector2.new(mousePos.X, mousePos.Y)
+end)
+
+-- Closest player to mouse
+local function getClosestPlayer()
+    local mousePos = UserInputService:GetMouseLocation()
+    local closest = nil
+    local shortestDist = fovRadius
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            if onScreen then
+                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    closest = player
+                end
+            end
+        end
+    end
+
+    return closest
+end
+
+-- Hook mouse ray
+local __namecall
+__namecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    if method == "FindPartOnRayWithIgnoreList" and silentAimEnabled then
+        local target = getClosestPlayer()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local direction = (target.Character.Head.Position - Camera.CFrame.Position).Unit * 500
+            local args = {...}
+            args[1] = Ray.new(Camera.CFrame.Position, direction)
+            return __namecall(self, unpack(args))
+        end
+    end
+    return __namecall(self, ...)
+end)
+
+-- Monitor new players and workspace objects
 Players.PlayerAdded:Connect(function(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.3)
@@ -126,38 +227,6 @@ Workspace.DescendantAdded:Connect(function(obj)
     end
 end)
 
--- ESP Logic Toggle
-checkbox.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    checkbox.Text = espEnabled and "☑" or "☐"
-    if espEnabled then
-        updatePlayerESP()
-        highlightDefaultCams()
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            checkAndHighlightGadget(obj)
-        end
-    else
-        -- Remove all highlights
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p.Character then unhighlightObject(p.Character, "ESP_Highlight") end
-        end
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            unhighlightObject(obj, "ObjectESP")
-            unhighlightObject(obj, "CamHighlight")
-        end
-    end
-end)
-
--- Optional: Refresh ESP every few seconds just in case
-task.spawn(function()
-    while true do
-        if espEnabled then
-            updatePlayerESP()
-        end
-        task.wait(3)
-    end
-end)
-
 -- Hide GUI with Right Ctrl
 local guiVisible = true
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -167,3 +236,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         screenGui.Enabled = guiVisible
     end
 end)
+
