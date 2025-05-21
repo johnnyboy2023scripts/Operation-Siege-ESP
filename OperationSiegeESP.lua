@@ -1,8 +1,7 @@
 -- created by johnny_boy2023 if u find this script good 4 u. this script is in BETA and will have bugs. if u cant see enemy players just disable and enable the ESP again. 
 --UPDATE 20/05/2025 - Added Silent Aim. 
---heres the raw and shortened version
---COPY AND PASTE THIS IN GAME:
---loadstring(game:HttpGet("https://raw.githubusercontent.com/johnnyboy2023scripts/Operation-Siege-ESP/main/OperationSiegeESP.lua"))()
+--heres the raw and shortened version u can copy and paste in the game. 
+--loadstring(game:HttpGet("https://raw.githubusercontent.com/johnnyboy2023scripts/Operation-Siege-ESP/refs/heads/main/OperationSiegeESP.lua"))()
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
